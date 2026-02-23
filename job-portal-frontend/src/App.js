@@ -20,6 +20,7 @@ import RecruiterProfile from "./pages/RecruiterProfile";
 import Profile from "./pages/Profile";
 import AdminUsers from "./pages/AdminUsers";
 import AdminUserProfileView from "./pages/AdminUserProfileView";
+import VerifyOtp from "./pages/VerifyOtp";
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -77,7 +78,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+        <Route path="/verify-otp" element={<VerifyOtp />} />
         <Route path="/my-profile" element={<MyProfile />} />
         <Route path="/jobseeker/:userId" element={<JobSeekerProfileView />} />
         <Route path="/recruiter/profile" element={<RecruiterProfile />} />
