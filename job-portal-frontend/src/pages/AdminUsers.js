@@ -10,7 +10,7 @@ const AdminUsers = () => {
   const [q, setQ] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
 
-  const [actionId, setActionId] = useState(""); // for blocking/deleting loading
+  const [actionId, setActionId] = useState(""); // block/delete/approve loading id
   const navigate = useNavigate();
 
   const load = async () => {
@@ -30,6 +30,29 @@ const AdminUsers = () => {
     load();
   }, []);
 
+  // ✅ APPROVE RECRUITER
+  const approveRecruiter = async (id) => {
+    if (!window.confirm("Approve this recruiter?")) return;
+
+    try {
+      setActionId(id);
+      const res = await api.put(`/admin/approve-recruiter/${id}`);
+
+      // Update UI immediately
+      setUsers((prev) =>
+        prev.map((u) =>
+          u._id === id ? { ...u, isApproved: true } : u
+        )
+      );
+
+      alert(res.data?.message || "Recruiter approved ✅");
+    } catch (e) {
+      alert(e.response?.data?.message || "Approval failed");
+    } finally {
+      setActionId("");
+    }
+  };
+
   const deleteUser = async (id, role) => {
     if (role === "ADMIN") {
       alert("You cannot delete an admin user.");
@@ -41,10 +64,7 @@ const AdminUsers = () => {
     try {
       setActionId(id);
       await api.delete(`/admin/users/${id}`);
-
-      // ✅ update UI instantly
       setUsers((prev) => prev.filter((u) => u._id !== id));
-
       alert("User deleted ✅");
     } catch (e) {
       alert(e.response?.data?.message || "Delete failed");
@@ -63,7 +83,6 @@ const AdminUsers = () => {
       setActionId(id);
       const res = await api.put(`/admin/users/${id}/block`);
 
-      // ✅ update UI instantly
       setUsers((prev) =>
         prev.map((u) =>
           u._id === id ? { ...u, isBlocked: res.data?.isBlocked } : u
@@ -91,10 +110,19 @@ const AdminUsers = () => {
     });
   }, [users, q, roleFilter]);
 
-  const badgeClass = (u) => {
+  const roleBadge = (u) => {
     if (u.role === "ADMIN") return "badge badge-green";
     if (u.role === "RECRUITER") return "badge badge-blue";
     return "badge";
+  };
+
+  const approvalBadge = (u) => {
+    if (u.role !== "RECRUITER") return null;
+    return u.isApproved ? (
+      <span className="badge badge-green">APPROVED</span>
+    ) : (
+      <span className="badge badge-red">PENDING</span>
+    );
   };
 
   return (
@@ -156,10 +184,15 @@ const AdminUsers = () => {
 
                 <p className="muted" style={{ marginTop: 6 }}>
                   <b>Role:</b>{" "}
-                  <span className={badgeClass(u)}>{u.role}</span>{" "}
+                  <span className={roleBadge(u)}>{u.role}</span>{" "}
+                  {u.role === "RECRUITER" && (
+                    <>
+                      {" "}• {approvalBadge(u)}
+                    </>
+                  )}
                   {u.role !== "ADMIN" && (
                     <>
-                      • <b>Status:</b>{" "}
+                      {" "}• <b>Status:</b>{" "}
                       <span className={u.isBlocked ? "badge badge-red" : "badge"}>
                         {u.isBlocked ? "BLOCKED" : "ACTIVE"}
                       </span>
@@ -181,6 +214,17 @@ const AdminUsers = () => {
                   <span className="muted small" style={{ alignSelf: "center" }}>
                     No profile
                   </span>
+                )}
+
+                {/* ✅ APPROVE BUTTON ONLY FOR PENDING RECRUITERS */}
+                {u.role === "RECRUITER" && !u.isApproved && (
+                  <button
+                    className="btn btn-primary"
+                    disabled={actionId === u._id}
+                    onClick={() => approveRecruiter(u._id)}
+                  >
+                    {actionId === u._id ? "Approving..." : "Approve"}
+                  </button>
                 )}
 
                 {/* BLOCK/UNBLOCK */}
